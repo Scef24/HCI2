@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCI Activity</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <span class="navbar-brand mb-0 h1">Christian Adrianne Ochea</span>
+    </nav>
+
+    <div id="app" class="container py-4">
+        <div class="text-center mb-4">
+            <button class="btn btn-primary" @click="toggleView">{{ buttonText }}</button>
+        </div>
+
+        <div v-if="show">
+            <h2 class="mb-3 text-center">These are a List of Memes</h2>
+            <div class="card" style="width: 18rem; margin: 0 auto;">
+                <img :src="memeImgURL" class="card-img-top" alt="Random Meme">
+               <h5 class="card-title">{{memeName}}</h5>
+                <div class="card-body">
+                    <button class="btn btn-info" @click="nextMemeImg">Next Image</button>
+                </div>
+            </div>
+        </div>
+
+        <div v-else>
+            <div class="mb-3">
+                <label for="emailInput" class="form-label">Email address</label>
+                <input type="email" class="form-control" id="emailInput" v-model="emailInput" placeholder="Enter email">
+            </div>
+            <button class="btn btn-success mb-3" @click="checkEmail">Check Email</button>
+            <p>{{ emailMessage }}</p>
+            <div v-if="charImage" class="card" style="width: 18rem; margin: 0 auto;">
+                <img :src="charImage" class="card-img-top" alt="Rick and Morty Character">
+                <div class="card-body">
+                    <h5 class="card-title">{{ charName }}</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script src="https://unpkg.com/vue@3"></script>
+<script>
+    const app = Vue.createApp({
+        data() {
+            return {
+                show: true,
+                memeImgURL: '',
+                emailInput: '',
+                emailMessage: '',
+                charImage:'',
+                charName:'',
+                memeName:''
+            }
+        },
+        computed: {
+            buttonText() {
+                return this.show ? "Show Rick and Morty Character" : "Show Memes";
+            }
+        },
+        methods: {
+            toggleView() {
+                
+                this.show = !this.show;
+                if (!this.show && !this.charImage) {
+                   
+                    this.checkEmail();
+                }
+            },
+            showMemes(show) {
+                this.show = show;
+            },
+            nextMemeImg() {
+                this.fetchMemeImage();
+            },
+            fetchMemeImage() {
+                fetch('https://api.imgflip.com/get_memes')
+                    .then(response => response.json())
+                    .then(data => {
+                        const memes = data.data.memes;
+                        const randomMeme = memes[Math.floor(Math.random() * memes.length)];
+                        this.memeImgURL = randomMeme.url;
+                        this.memeName = randomMeme.name;
+                    })
+                    .catch(error => console.error('Error:', error));
+            },
+            checkEmail() {
+                if (this.emailInput) {
+                    const options = {
+                        method: 'GET',
+                        headers: {
+                            'X-RapidAPI-Key': 'e816cc9fdamsh7332ff2d655b2c2p130bf4jsnc53843223cdc',
+                            'X-RapidAPI-Host': 'mailcheck.p.rapidapi.com'
+                        }
+                    };
+
+                    fetch(`https://mailcheck.p.rapidapi.com/?domain=${this.emailInput.split('@')[1]}`, options)
+                        .then(response => response.json())
+                        // .then(data => this.emailMessage = data.valid ? 'Valid Email' : 'Invalid Email')
+                        .then(data=>{
+
+                            if(data.valid) {
+                                this.emailMessage = "Valid Email"
+
+                                return fetch('https://rickandmortyapi.com/api/character')
+                                .then(response => response.json())
+                                .then (data => {
+                                    const characters = data.results;
+                                    const randomIndex = Math.floor(Math.random() * characters.length);
+                                    const randomCharacter = characters[randomIndex];
+                                     this.charImage = randomCharacter.image;
+                                     this.charName = randomCharacter.name;
+                                })
+                            }
+                            else {
+                                this.emailMessage="Invalid Email"
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
+
+                } else {
+                    this.emailMessage = 'Please enter an email.';
+                }
+            }
+        },
+        mounted() {
+            this.fetchMemeImage();
+        }
+    }).mount("#app");
+
+</script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+</html>
